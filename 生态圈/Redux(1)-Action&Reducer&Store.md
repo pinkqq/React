@@ -1,3 +1,5 @@
+> 这是我参与更文挑战的第 3 天，活动详情查看： [更文挑战](https://juejin.cn/post/6967194882926444557)
+
 ## 诞生
 
 `Redux` 是一个完整前端状态管理框架，它的灵感来源于 `Flux` 的几个重要特性（更新逻辑集中管理、不允许程序直接修改数据），最早由 `Dan` 大神在 2015 年提出。
@@ -6,7 +8,7 @@
 
 ## 三大特性
 
-### 单一数据源（Single Source of Truth）
+### 一、单一数据源（Single Source of Truth）
 
 `Redux` 将组件中的 `state` 都抽离出来（`object tree`），放入一个外部 `store`，**全局只有一个唯一的 store，store 负责提供应用所有的状态。** 这可以让组件间通讯更加容易，不再需要考虑组件间的层级关系、如何传递数据等问题，所有的组件只需和 `store` 通讯，`store` 的变化会引起相关组件的变化。
 
@@ -15,7 +17,9 @@
 ![redux.svg](https://p1-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/f65d5f1d63b14d83ae5a36f883973a8f~tplv-k3u1fbpfcp-watermark.image)
 （图片来源：https://css-tricks.com/learning-react-redux/）
 
-### State 是只读的（State is Read-Only）
+---
+
+### 二、State 是只读的（State is Read-Only）
 
 `store` 本身只有四个方法：
 
@@ -39,7 +43,7 @@ store.dispatch(action);
 
 强制使用 `action` 来描述所有变化的好处是可以清晰地知道到底 **发生了什么**，它们可以被日志打印、序列化、储存、后期调试或测试时回放出来。
 
-### 纯函数更新 store
+## 三、纯函数更新 store
 
 > 纯函数：输出结果完全取决于输入参数，便于测试和预测结果。
 
@@ -55,7 +59,7 @@ var someReducer = function(state, action) {
 
 正因为 `reducer` 只是函数，你可以控制它们被调用的顺序，传入附加数据，甚至编写可复用的 `reducer` 来处理一些通用任务，如分页器。
 
-## 理解 Action
+# 理解 Action
 
 **Action** 只是一个描述变化的普通对象，它是改变 `store` 数据的唯一方式。通过 `store.dispatch(action)` 将数据从应用传到 `store`。
 
@@ -70,9 +74,9 @@ var someReducer = function(state, action) {
 
 除了 `type` 字段外，action 对象的结构完全由你自己决定。
 
-### 一些建议
+## 一些建议
 
-#### 1. 样板文件使用
+### 1、 样板文件使用
 
 多数情况下，`type` 会被定义成字符串常量。对于小应用来说，使用字符串做 `action type` 更方便些。不过当应用规模越来越大时，建议使用单独的模块或文件来存放 `action`。
 
@@ -97,7 +101,7 @@ import { ADD_TODO } from "../actionTypes";
 - **避免重复命名**（可能已经有人添加了你所需要的 action）。
 - 帮助团队中的所有人 **及时追踪新功能** 的范围与实现。在 `Pull Request` 中能查到所有添加，删除，修改 `Action types` 列表的记录
 
-#### 2. 如何构造 action（参照 Flux 标准）
+### 2、 如何构造 action（参照 Flux 标准）
 
 **Action 必须是：**
 
@@ -117,7 +121,7 @@ import { ADD_TODO } from "../actionTypes";
 
 **Action 不应该包含除了 `type`、`error`、`payload`、`meta` 以外的其他字段。**
 
-### Action Creator（创建函数）
+## Action Creator（创建函数）
 
 Action Creator（创建函数）就是生成 action 的方法。
 
@@ -145,7 +149,7 @@ const boundAddTodo = (text) => dispatch(addTodo(text));
 boundAddTodo(text);
 ```
 
-#### bindActionCreators
+### bindActionCreators
 
 > **actionCreators (Function or Object)**: 一个 action creator，或者一个 value 是 action creator 的对象。
 >
@@ -164,7 +168,7 @@ addTodo();
 // 等同于 dispatch(addTodo(text));
 ```
 
-## 理解 Reducer
+# 理解 Reducer
 
 `Reducer` 是根据 `action` 更新 `state` 的纯函数，它接收旧的 `state` 和 `action`，返回新的 `state`。
 
@@ -210,7 +214,7 @@ function todoApp(state = initialState, action) {
 - **不要修改 state。** 使用 `Object.assign()` 或者 对象展开运算符(`{ ...state, ...newState }`) 新建了一个副本。
 - **在 default 情况下返回旧的 state。**
 
-### 拆分 Reducer
+## 拆分 Reducer
 
 ![reducer.svg](https://p6-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/ffb7305af2ca4a16a22a1cfcada03e3e~tplv-k3u1fbpfcp-watermark.image)
 
@@ -301,7 +305,7 @@ function todoApp(state = {}, action) {
 
 **注意每个 reducer 只负责管理全局 state 中它负责的一部分。每个 reducer 的 state 参数都不同，分别对应它管理的那部分 state 数据。**
 
-#### combineReducers
+### combineReducers
 
 > combineReducers(reducers)
 
@@ -329,7 +333,7 @@ export default function todoApp(state = {}, action) {
 }
 ```
 
-## 理解 Store
+# 理解 Store
 
 **Redux 的核心就是 只有一个单一的 store。**
 
@@ -341,9 +345,9 @@ export default function todoApp(state = {}, action) {
 - 通过 `subscribe(listener)` 注册监听器;
 - 通过 `subscribe(listener)` 返回的函数注销监听器。
 
-![redux.gif](https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/c1129598835b468d8fcb6ccfd016540b~tplv-k3u1fbpfcp-watermark.image)
+![store.png](https://p1-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/6921e4759daa4081a57f18256bff8934~tplv-k3u1fbpfcp-watermark.image)
 
-### 创建 Store（createStore）
+## 创建 Store（createStore）
 
 > createStore(reducer, [preloadedState], enhancer)
 
@@ -353,7 +357,7 @@ export default function todoApp(state = {}, action) {
 2. [preloadedState] (any): 初始时的 state。
 3. enhancer (Function): Store enhancer 是一个组合 store creator 的高阶函数，返回一个新的强化过的 store creator
 
-### 发起 Actions
+## 发起 Actions
 
 ```js
 import { createStore } from "redux";
