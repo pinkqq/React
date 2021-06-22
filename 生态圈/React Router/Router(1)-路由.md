@@ -1,0 +1,357 @@
+## 什么是前端路由？
+
+传统上，路由是一个后端的概念。但 url 发生变化的时候，后端根据变化返回对应的文件。
+
+随着单页应用的出现，前端也需要处理路由：
+
+- 我们不希望 url 的变化引起浏览器的刷新，只需要切换页面内容。
+- 当再次访问页面时，可以根据 url 展示对应的内容
+- 更有语义的组织资源
+
+`React Router` 就可以帮你管理路由，它是一个基于 React 之上的强大路由库，它也是 React 全家桶的其中一员（[React](https://juejin.cn/post/6966180503003070500) + [Redux](https://juejin.cn/post/6970883342720270373) + React Router），它可以让你向应用中快速地添加视图和数据流，同时保持页面与 URL 间的同步。
+
+## React Router 如何实现路由？
+
+![未命名文件.png](https://p6-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/d42ab5fc47804d2ebb646c0732abcbc5~tplv-k3u1fbpfcp-watermark.image)
+
+路由的基础架构十分简单，主要分为三部分：【路由定义】、【Router】、【页面】。我们通过【路由定义】来映射 path 和组件的关系，然后经过【Router】的解析，在【页面】的组件容器上展示 path 对应内容。
+
+## React Router 特性
+
+- **声明式路由定义**
+  对比后端（express）用路由表配置路由，React Router 使用 React tag 定义路由，它可以写在任何位置。
+  ```jsx
+  const App = () => {
+    return (
+      <div>
+        <Router>
+          <nav>
+            <Link to="/about">About</Link>
+          </nav>
+          <div>
+            <Route path="/about" component={About}></Route>
+          </div>
+        </Router>
+      </div>
+    );
+  };
+  ```
+- **动态路由（Dynamic Routing）**
+  与动态路由对应的是静态路由（Static Routing），静态路由的路由表是不变的，在项目开始运行时，我们就知道了所有的路由关系：
+
+  ```js
+  var express = require("express");
+  var router = express.Router();
+
+  router.get("/", function (req, res) {
+    res.send("Wiki home page");
+  });
+
+  router.get("/about", function (req, res) {
+    res.send("About this wiki");
+  });
+
+  module.exports = router;
+  ```
+
+  但是 React Router 是在页面 render 时才会被解析。`<Route>` 作为一个组件，没有被渲染时，是访问不到他的路由（`/about`）；所以，路由表是随着组件的渲染而变化增加的。
+
+  ```jsx
+  <Route path="/about" component={About} />
+  ```
+
+## 三种路由的实现方式
+
+React Router 提供了三种路由的实现方式：
+
+- **URL 路由**
+  利用了 HTML5 History Interface 中新增的 pushState() 和 replaceState() 方法，当它们执行修改时，虽然改变了当前的 URL，但浏览器不会立即向后端发送请求。只要浏览器支持，都可以使用 URL 路由（`/home`, `/about`）
+  ```js
+  import { BrowserRouter } from "react-router-dom";
+  ```
+  ```jsx
+  <BrowserRouter
+    basename={optionalString}
+    forceRefresh={optionalBool}
+    getUserConfirmation={optionalFunc}
+    keyLength={optionalNumber}
+  >
+    <App />
+  </BrowserRouter>
+  ```
+- **hash 路由**
+  即地址栏 URL 中的 # 符号（此 hash 不是密码学里的散列运算）-- `http://www.abc.com/#/hello`。hash 虽然出现在 URL 中，但不会被包括在 HTTP 请求中，对后端完全没有影响，因此改变 hash 不会重新加载页面。
+
+  ```js
+  import { HashRouter } from "react-router-dom";
+  ```
+
+  ```jsx
+  <HashRouter
+    basename={optionalString}
+    getUserConfirmation={optionalFunc}
+    hashType={optionalString}
+  >
+    <App />
+  </HashRouter>
+  ```
+
+- **内存路由**
+  路由的历史记录保存在内存中，不反映到浏览器的地址栏，在测试和非浏览器环境（如 React Native）中很有用。
+  ```js
+  import { MemoryRouter } from "react-router";
+  ```
+  ```jsx
+  <MemoryRouter
+    initialEntries={optionalArray}
+    initialIndex={optionalNumber}
+    getUserConfirmation={optionalFunc}
+    keyLength={optionalNumber}
+  >
+    <App />
+  </MemoryRouter>
+  ```
+
+## 安装
+
+- npm
+
+```
+npm install react-router-dom --save
+```
+
+- yarn
+
+```
+yarn add react-router-dom --dev
+```
+
+## 1st Example: 基础的路由切换
+
+```js
+import React from "react";
+import { BrowserRouter as Router, Route, Switch, Link } from "react-router-dom";
+
+const App = () => (
+  {/* Router ⬇️ */}
+  <Router>
+    {/* 路由切换 ⬇️ */}
+    <nav>
+      <ul>
+        <li>
+          <Link to="/home">home</Link>
+        </li>
+        <li>
+          <Link to="/about">about</Link>
+        </li>
+        <li>
+          <Link to="/users">users</Link>
+        </li>
+      </ul>
+    </nav>
+    {/* 容器组件 ⬇️ */}
+    <Switch>
+      {/* 路由匹配列表 ⬇️ */}
+      <Route path="/home" component={Home}></Route>
+      <Route path="/about" component={About}></Route>
+      <Route path="/users" component={Users}></Route>
+    </Switch>
+  </Router>
+);
+
+function Home() {
+  return <div>Home</div>;
+}
+function About() {
+  return <div>About</div>;
+}
+function Users() {
+  return <div>Users</div>;
+}
+
+export default App;
+```
+
+## 基于路由，组织资源
+
+- **实现业务逻辑的松耦合**
+  我们把 业务相关/代码相关 的部分通过路由整合在一起。
+- **易于扩展、重构和维护**
+  因为路由的实现没有杂糅在业务代码中，而是用 React Router 抽象出来，这样业务的逻辑单元就变成了一个个页面，无论是扩展新页面或者重构维护，从路由的角度入手都显得更加清楚。
+- **路由层面实现 Lazy Load**
+  因为我们将路由定义在了统一的地方，所以从路由层面做 Lazy Load 会更方便，并且可以做到加载不同的组件，第一次 loading 的效率都很高。
+
+## 核心 API 介绍
+
+### `<Route>`
+
+`<Route>` 组件是 React Router 中最重要的组件。它的基本职能是**在路径匹配时，显示对应组件。**
+
+```jsx
+<Router>
+  {
+    // exact: 是否精确匹配 path
+  }
+  <Route exact path="/" component={Home}></Route>
+  <Route path="/about" component={About}></Route>
+</Router>
+```
+
+还有一点，`<Route>` 是没有排他性的，就是说他可以同时渲染两个匹配上的组件（多匹配）：
+
+```jsx
+<Router>
+  <Route path="/:user">
+    <User />
+  </Route>
+  <Route>
+    <NoMatch />
+  </Route>
+</Router>
+
+// 匹配到路径 /user 时，
+// 组件 UserInfo 和 组件 UserDetail 会同时展现。
+```
+
+#### Props
+
+- **path**: URL 中的路径。
+- **component**: 当匹配到 URL 时，单个的组件会被渲染。它可以被父 route 组件的 `this.props.children` 获取。
+
+  ```jsx
+  const routes = (
+    <Route component={App}>
+      <Route path="groups" component={Groups} />
+      <Route path="users" component={Users} />
+    </Route>
+  );
+
+  class App extends React.Component {
+    render() {
+      return (
+        <div>
+          {/* 这会是 <Users> 或 <Groups> */}
+          {this.props.children}
+        </div>
+      );
+    }
+  }
+  ```
+
+- **components**: 可以定义一个或多个已命名的组件，以 `{name:component}` 的形式定义，可以被 父 route 组件的 this.props[name] 获取。
+
+  ```jsx
+  const routes = (
+    <Route component={App}>
+      <Route
+        path="groups"
+        components={{ main: Groups, sidebar: GroupsSidebar }}
+      />
+      <Route path="users" components={{ main: Users, sidebar: UsersSidebar }}>
+        <Route path="users/:userId" component={Profile} />
+      </Route>
+    </Route>
+  );
+
+  class App extends React.Component {
+    render() {
+      const { main, sidebar } = this.props;
+      return (
+        <div>
+          <div className="Main">{main}</div>
+          <div className="Sidebar">{sidebar}</div>
+        </div>
+      );
+    }
+  }
+  ```
+
+### `<Switch>`
+
+只显示第一个匹配的路由（改变默认的多匹配行为）。
+
+```jsx
+<Router>
+  <Route path="/:user">
+    <User />
+  </Route>
+  <Route>
+    <NoMatch />
+  </Route>
+</Router>
+
+// 匹配到路径 /1 时，
+// 只有组件 User 会同时展现。
+```
+
+### `<Link>`
+
+展现的效果和普通的链接（`<a>`）一样，但不会触发浏览器的刷新，而是由 React Router 接管。
+
+```jsx
+<Link to="/about">About</Link>
+```
+
+#### Props
+
+- **to**: 跳转链接的路径。
+- **replace**: 为 `true` 时，会替换 history 中的当前路径，而不是新增。
+
+### `<NavLink>`
+
+类似 `<Link>`，但是会添加当前选中状态（className）
+
+```jsx
+<NavLink to="/faq" activeClassName="selected">
+  FAQs
+</NavLink>
+```
+
+#### Props
+
+- **activeClassName**: 该路由激活时，添加的 class，默认为“active”
+- **activeStyle**: 该路由激活时，添加的 style 样式。
+
+  ```jsx
+  <NavLink
+    to="/faq"
+    activeStyle={{
+      fontWeight: "bold",
+      color: "red",
+    }}
+  >
+    FAQs
+  </NavLink>
+  ```
+
+### `<Prompt>`
+
+在用户离开页面时，提示用户是否离开当前页面（如表单填写一半）。
+
+```jsx
+<Prompt when={formIsHalfFilledOut} message="Are you sure you want to leave?" />
+```
+
+#### Props
+
+- **message**: 提示用户的消息
+- **when**: `<Prompt>` 的渲染条件
+
+### `<Redirect>`
+
+重定向当前页面，而不改变旧的 URL。例如登陆跳转
+
+```jsx
+<Route exact path="/">
+  {loggedIn ? <Redirect to="/dashboard" /> : <PublicHomePage />}
+</Route>
+```
+
+#### Props
+
+- **to**: 重定向的 URL
+- **form**: 需要被重定向的 URL
+
+## 参考资料
+
+- REACT TRAINING / REACT ROUTER：https://reactrouter.com/web/guides/quick-start
