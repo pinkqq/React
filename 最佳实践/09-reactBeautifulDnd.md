@@ -87,7 +87,8 @@ import { Droppable } from 'react-beautiful-dnd';
 参数介绍：
 
 - `DroppableId`： 此属性是必须的，用于唯一标识，不要更改此 ID。
-- `direction`：`vertical`（水平拖拽）/ `horizontal`（垂直拖拽）
+- `direction`：`vertical`（垂直拖拽，默认）/ `horizontal`（水平拖拽）
+- `type`：指定可以被拖动的元素 class
 
 `Droppable` 的 React 子元素必须是返回 `ReactElement` 的函数。该函数提供了两个参数：`provided` 和 `snapshot`：
 
@@ -149,7 +150,7 @@ import { Draggable } from 'react-beautiful-dnd';
 ## 开始项目
 
 效果预览：
-![03.gif](https://p9-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/5f62352ea0f2420ebac6a8126f8a7ea9~tplv-k3u1fbpfcp-watermark.image)
+![dnd.gif](https://p1-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/97c75b60f7dd4112a8ba740842c13e84~tplv-k3u1fbpfcp-watermark.image)
 
 ### 安装
 
@@ -166,3 +167,252 @@ npm install react-beautiful-dnd --save
 ```js
 import { DragDropContext } from 'react-beautiful-dnd';
 ```
+
+### 目录
+
+```
+└── dndPro
+    ├── component
+        ├── Column.js
+        ├── Item.js
+        ├── ItemList.js
+        └── Row.js
+    ├── get-initial-data.js // 初始数据
+    ├── style.css // 样式文件
+    └── index.js
+```
+
+### Dom 结构
+
+我们要实现三种拖拽需求：**容器可拖拽**、**元素可穿梭容器拖拽** 和 **容器内部元素的垂直拖拽**。我们将通过两层不通拖拽方向的 `<Droppable direction="?" />` 和虚拟列表模式实现。
+
+#### 第一层：容器可拖拽
+
+`<DragDropContext />` 包裹在最外层，构建一个可以拖拽的范围；添加第一个 `<Droppable />`，一个可以被拖拽放入的区域块，并指定拖拽方向为水平（`horizontal`）实现容器见的拖拽，指定拖拽类型为 `column` （只有 `className='column'` 元素可拖拽）。根据 `columnOrder: ['column-0', 'column-1']` 渲染两个 `Column` 组件。
+
+```jsx
+// index.js
+
+import { DragDropContext, Droppable } from 'react-beautiful-dnd';
+
+<DragDropContext onDragEnd={onDragEnd}>
+  <div className="dnd-pro">
+    <Droppable
+      droppableId="all-droppables"
+      direction="horizontal"
+      type="column"
+    >
+      {(provided) => (
+        <div
+          className="columns"
+          {...provided.droppableProps}
+          ref={provided.innerRef}
+        >
+          {state.columnOrder.map((columnId, index) => (
+            <Column
+              key={columnId}
+              column={state.columns[columnId]}
+              index={index}
+            />
+          ))}
+          {provided.placeholder}
+        </div>
+      )}
+    </Droppable>
+  </div>
+</DragDropContext>;
+```
+
+`Column` 组件就是一个 `<Draggable />` 元素，到这里就实现了**容器可拖拽**，是不是很 easy ～
+
+```jsx
+// Column.js
+
+import { Draggable } from 'react-beautiful-dnd';
+
+<Draggable draggableId={column.id} index={index}>
+  {(provided) => (
+    <div
+      className="column"
+      {...provided.draggableProps}
+      ref={provided.innerRef}
+    >
+      <h3 className="column-title" {...provided.dragHandleProps}>
+        {column.title}
+      </h3>
+      <ItemList column={column} index={index} />
+    </div>
+  )}
+</Draggable>;
+```
+
+#### 第二层：虚拟列表
+
+`react-beautiful-dnd` 支持在虚拟列表内和虚拟列表之间拖放。一般情况，建议列表的规格不超过 500 个元素。虚拟列表，是对窗口性能的一种优化，详细介绍可以[看这边](https://github.com/atlassian/react-beautiful-dnd/blob/master/docs/patterns/virtual-lists.md)，我们直接来看看用法吧：
+
+- 虚拟列表的行为与常规列表不同。我们需要告诉 `rbd` 我们的列表是虚拟列表。
+
+  ```jsx
+  <Droppable droppableId="droppable" mode="virtual">
+    {/*...*/}
+  </Droppable>
+  ```
+
+- 拖动项目的副本
+
+  ```jsx
+  <Droppable
+    droppableId="droppable"
+    mode="virtual"
+    renderClone={(provided, snapshot, rubric) => (
+      <div
+        {...provided.draggableProps}
+        {...provided.dragHandleProps}
+        ref={provided.innerRef}
+      >
+        Item id: {items[rubric.source.index].id}
+      </div>
+    )}
+  >
+    {/*...*/}
+  </Droppable>
+  ```
+
+需要注意的是，`placeholder` 在虚拟列表中会出现问题。因为虚拟列表的长度不再取决于元素的集体长度，而是计算视觉长度，所以我们需要做一些处理：
+
+```jsx
+const itemCount = snapshot.isUsingPlaceholder
+  ? column.items.length + 1
+  : column.items.length;
+```
+
+对虚拟列表有初步了解后，我们再回到 `<ItemList />` 来。
+
+新开辟一个可以被拖拽放入的区域块 `<Droppable />`，拖拽方向取垂直（默认），指定虚拟列表模式（`mode="virtual"`），发生拖拽时，使用元素副本（`renderClone`）。
+
+```jsx
+// ItemList.js
+
+import { FixedSizeList } from 'react-window';
+import { Droppable } from 'react-beautiful-dnd';
+
+<Droppable
+  droppableId={column.id}
+  mode="virtual"
+  renderClone={(provided, snapshot, rubric) => (
+    <Item
+      provided={provided}
+      isDragging={snapshot.isDragging}
+      item={column.items[rubric.source.index]}
+    />
+  )}
+>
+  {(provided, snapshot) => {
+    const itemCount = snapshot.isUsingPlaceholder
+      ? column.items.length + 1
+      : column.items.length;
+
+    return (
+      <FixedSizeList
+        height={500}
+        itemCount={itemCount}
+        itemSize={80}
+        width={300}
+        outerRef={provided.innerRef}
+        itemData={column.items}
+        className="task-list"
+        ref={listRef}
+      >
+        {Row}
+      </FixedSizeList>
+    );
+  }}
+</Droppable>;
+```
+
+`<Item />` 组件和 `<Row />` 组件都是一个 Draggable 元素。
+
+### onDragEnd
+
+容器级别的拖拽和同容器内的元素拖拽，简单的交换元素即可：
+
+```js
+// reordering list
+if (result.type === 'column') {
+  const columnOrder = reorderList(
+    state.columnOrder,
+    result.source.index,
+    result.destination.index,
+  );
+
+  setState({
+    ...state,
+    columnOrder,
+  });
+  return;
+}
+
+// reordering in same list
+if (result.source.droppableId === result.destination.droppableId) {
+  const column = state.columns[result.source.droppableId];
+  const items = reorderList(
+    column.items,
+    result.source.index,
+    result.destination.index,
+  );
+
+  const newState = {
+    ...state,
+    columns: {
+      ...state.columns,
+      [column.id]: {
+        ...column,
+        items,
+      },
+    },
+  };
+  setState(newState);
+  return;
+}
+```
+
+元素跨容器拖拽，分为两步：
+
+- 从源列表（source）中删除元素
+- 将元素添加到目标列表（destination）
+
+```jsx
+// moving between lists
+const sourceColumn = state.columns[result.source.droppableId];
+const destinationColumn = state.columns[result.destination.droppableId];
+const item = sourceColumn.items[result.source.index];
+
+// 1. remove item from source column
+const newSourceColumn = {
+  ...sourceColumn,
+  items: [...sourceColumn.items],
+};
+newSourceColumn.items.splice(result.source.index, 1);
+
+// 2. insert into destination column
+const newDestinationColumn = {
+  ...destinationColumn,
+  items: [...destinationColumn.items],
+};
+newDestinationColumn.items.splice(result.destination.index, 0, item);
+
+const newState = {
+  ...state,
+  columns: {
+    ...state.columns,
+    [newSourceColumn.id]: newSourceColumn,
+    [newDestinationColumn.id]: newDestinationColumn,
+  },
+};
+
+setState(newState);
+```
+
+### 完整代码
+
+主要逻辑和核心代码以上，完整代码[戳这里](https://github.com/pinkqq/react-antd/tree/main/src/pages/dndPro)。
